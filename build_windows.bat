@@ -1,5 +1,18 @@
 @echo off
-echo Building Advanced Auto Clicker for Windows...
+setlocal
+
+REM Check if version argument is provided
+if "%~1"=="" (
+    echo Usage: build_windows.bat ^<version^>
+    exit /b 1
+)
+
+set VERSION=%~1
+
+echo Checking dependencies for Advanced Auto Clicker...
+call install_deps.bat
+
+echo Building Advanced Auto Clicker for Windows, version %VERSION%...
 
 REM Check if Python is installed
 python --version >nul 2>&1
@@ -19,14 +32,16 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Run the build script
+REM Run the build script, pass the version as an argument
 echo Running build script...
-python build_exe.py
+python build_exe.py %VERSION%
 
+REM Rename the built executable to include version number
 if exist "dist\AdvancedAutoClicker.exe" (
+    ren "dist\AdvancedAutoClicker.exe" "AdvancedAutoClicker_v%VERSION%.exe"
     echo.
     echo Build completed successfully!
-    echo Executable created: dist\AdvancedAutoClicker.exe
+    echo Executable created: dist\AdvancedAutoClicker_v%VERSION%.exe
     echo.
     echo You can now distribute the executable file.
     echo Configuration files will be stored in a "configs" folder next to the executable.
@@ -36,3 +51,4 @@ if exist "dist\AdvancedAutoClicker.exe" (
 )
 
 pause
+endlocal

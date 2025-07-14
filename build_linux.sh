@@ -2,7 +2,14 @@
 
 # Linux build script for Advanced Auto Clicker
 
-echo "Building Advanced Auto Clicker for Linux..."
+VERSION="$1"
+
+if [ -z "$VERSION" ]; then
+  echo "No version supplied. Usage: ./build-linux.sh <version>"
+  exit 1
+fi
+
+echo "Building Advanced Auto Clicker for Linux, version $VERSION..."
 
 # Check if PyInstaller is installed
 if ! command -v pyinstaller &> /dev/null; then
@@ -15,11 +22,11 @@ CURRENT_DIR=$(dirname $(readlink -f $0))
 SRC_DIR="$CURRENT_DIR/src"
 MAIN_FILE="$SRC_DIR/main.py"
 
-# Build executable
+# Build executable with versioned name
 pyinstaller "$MAIN_FILE" \
     --onefile \
     --windowed \
-    --name="AdvancedAutoClicker" \
+    --name="AdvancedAutoClicker_v$VERSION" \
     --add-data="src:src" \
     --hidden-import=customtkinter \
     --hidden-import=pyautogui \
@@ -36,7 +43,7 @@ pyinstaller "$MAIN_FILE" \
 echo "Build completed!"
 echo "Executable created in: $CURRENT_DIR/dist"
 
-# Make executable... executable
-chmod +x "$CURRENT_DIR/dist/AdvancedAutoClicker"
+# Make executable executable
+chmod +x "$CURRENT_DIR/dist/AdvancedAutoClicker_v$VERSION"
 
-echo "Done! You can run the executable with: ./dist/AdvancedAutoClicker"
+echo "Done! You can run the executable with: ./dist/AdvancedAutoClicker_v$VERSION"
