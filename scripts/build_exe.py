@@ -5,7 +5,7 @@ import os
 def create_icon():
     """Try to create an icon for the application"""
     try:
-        import create_icon
+        import scripts.create_icon as create_icon
         return create_icon.create_icon()
     except Exception as e:
         print(f"Could not create icon: {e}")
@@ -20,9 +20,10 @@ def build_executable():
     # Sanitize version string for filenames (optional)
     version_sanitized = version.replace(" ", "_").replace("/", "-")
 
-    # Get the current directory
+    # Get the current directory and project root
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    src_dir = os.path.join(current_dir, "src")
+    project_root = os.path.dirname(current_dir)
+    src_dir = os.path.join(project_root, "src")
     main_file = os.path.join(src_dir, "main.py")
 
     # Try to create icon
@@ -36,7 +37,7 @@ def build_executable():
         '--onefile',  # Create a single executable file
         '--windowed',  # Don't show console window (Windows)
         f'--name={exe_name}',
-        '--add-data=src;src',  # Include src directory
+        f'--add-data={src_dir};src',  # Include src directory
         '--hidden-import=customtkinter',
         '--hidden-import=pyautogui',
         '--hidden-import=keyboard',

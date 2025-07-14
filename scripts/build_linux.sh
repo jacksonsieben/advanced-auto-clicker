@@ -17,9 +17,10 @@ if ! command -v pyinstaller &> /dev/null; then
     pip install pyinstaller
 fi
 
-# Get current directory
+# Get current directory and project root
 CURRENT_DIR=$(dirname $(readlink -f $0))
-SRC_DIR="$CURRENT_DIR/src"
+PROJECT_ROOT="$(dirname "$CURRENT_DIR")"
+SRC_DIR="$PROJECT_ROOT/src"
 MAIN_FILE="$SRC_DIR/main.py"
 
 # Build executable with versioned name
@@ -27,7 +28,7 @@ pyinstaller "$MAIN_FILE" \
     --onefile \
     --windowed \
     --name="AdvancedAutoClicker_v$VERSION" \
-    --add-data="src:src" \
+    --add-data="$SRC_DIR:src" \
     --hidden-import=customtkinter \
     --hidden-import=pyautogui \
     --hidden-import=keyboard \

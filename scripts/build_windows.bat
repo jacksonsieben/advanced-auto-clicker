@@ -36,9 +36,8 @@ REM Run the build script, pass the version as an argument
 echo Running build script...
 python build_exe.py %VERSION%
 
-REM Rename the built executable to include version number
-if exist "dist\AdvancedAutoClicker.exe" (
-    ren "dist\AdvancedAutoClicker.exe" "AdvancedAutoClicker_v%VERSION%.exe"
+REM Check if build was successful
+if exist "dist\AdvancedAutoClicker_v%VERSION%.exe" (
     echo.
     echo Build completed successfully!
     echo Executable created: dist\AdvancedAutoClicker_v%VERSION%.exe
