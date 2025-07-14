@@ -92,7 +92,7 @@ jobs:
           ref: ${{ github.ref_name }}
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -107,7 +107,7 @@ jobs:
           python build_exe.py ${{ needs.bump-version.outputs.new_version }}
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-executable
           path: scripts/dist/AdvancedAutoClicker_v${{ needs.bump-version.outputs.new_version }}.exe
@@ -124,7 +124,7 @@ jobs:
           ref: ${{ github.ref_name }}
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -145,7 +145,7 @@ jobs:
           ./build_linux.sh ${{ needs.bump-version.outputs.new_version }}
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-executable
           path: scripts/dist/AdvancedAutoClicker_v${{ needs.bump-version.outputs.new_version }}
@@ -165,13 +165,13 @@ jobs:
           ref: ${{ github.ref_name }}
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: windows-executable
           path: ./artifacts/windows/
 
       - name: Download Linux artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: linux-executable
           path: ./artifacts/linux/
