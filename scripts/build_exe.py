@@ -42,6 +42,8 @@ def build_executable():
         '--hidden-import=pyautogui',
         '--hidden-import=keyboard',
         '--hidden-import=pynput',
+        '--hidden-import=pynput.keyboard',
+        '--hidden-import=pynput.mouse',
         '--hidden-import=PIL',
         '--hidden-import=tkinter',
         '--clean',  # Clean cache and remove temporary files

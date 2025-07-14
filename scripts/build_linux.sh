@@ -33,8 +33,14 @@ pyinstaller "$MAIN_FILE" \
     --hidden-import=pyautogui \
     --hidden-import=keyboard \
     --hidden-import=pynput \
+    --hidden-import=pynput.keyboard \
+    --hidden-import=pynput.keyboard._xorg \
+    --hidden-import=pynput.mouse \
+    --hidden-import=pynput.mouse._xorg \
     --hidden-import=PIL \
     --hidden-import=tkinter \
+    --hidden-import=Xlib \
+    --hidden-import=Xlib.display \
     --clean \
     --noconfirm \
     --distpath="$CURRENT_DIR/dist" \

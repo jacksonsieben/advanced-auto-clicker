@@ -131,12 +131,23 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-tk
+          sudo apt-get install -y \
+            python3-tk \
+            python3-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrandr-dev \
+            libxss-dev \
+            libglib2.0-dev \
+            libasound2-dev \
+            libgtk-3-dev \
+            libxtst6
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install python-xlib  # Required for pynput on Linux
 
       - name: Build Linux executable
         run: |

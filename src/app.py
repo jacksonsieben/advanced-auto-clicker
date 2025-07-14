@@ -933,7 +933,7 @@ class ModernAutoClickerApp:
         """Setup global hotkeys that work even when the window is not in focus"""
         keyboard.unhook_all()
         try:
-            print(f"Registrando hotkeys: Start/Stop={self.hotkey_start}, Stop={self.hotkey_stop}")  # Debug
+            print(f"Registering hotkeys: Start/Stop={self.hotkey_start}, Stop={self.hotkey_stop}")  # Debug
             
             # Validate hotkey format before registering
             if not self.hotkey_start or not self.hotkey_stop:
@@ -942,11 +942,11 @@ class ModernAutoClickerApp:
             # Try to register the hotkeys
             keyboard.add_hotkey(self.hotkey_start, self.toggle_clicking)
             keyboard.add_hotkey(self.hotkey_stop, self.stop_clicking)
-            
-            print(f"Hotkeys registradas com sucesso!")  # Debug
+
+            print(f"Hotkeys registered successfully!")  # Debug
         except Exception as e:
-            print(f"Erro ao registrar hotkeys: {e}")
-            
+            print(f"Error registering hotkeys: {e}")
+
             # Reset to default hotkeys if there's an error
             self.hotkey_start = "f6"
             self.hotkey_stop = "f7"
@@ -955,8 +955,8 @@ class ModernAutoClickerApp:
             try:
                 keyboard.add_hotkey(self.hotkey_start, self.toggle_clicking)
                 keyboard.add_hotkey(self.hotkey_stop, self.stop_clicking)
-                print("Voltando para hotkeys padrão: F6 e F7")
-                
+                print("Returning to default hotkeys: F6 and F7")
+
                 # Update button texts with default hotkeys
                 self.update_button_texts()
                 
@@ -966,7 +966,7 @@ class ModernAutoClickerApp:
                                      "F6 - Start/Stop\n"
                                      "F7 - Stop")
             except Exception as e2:
-                print(f"Erro ao registrar hotkeys padrão: {e2}")
+                print(f"Error registering default hotkeys: {e2}")
                 messagebox.showerror("Error", 
                                    f"Critical error while registering hotkeys: {e2}\n\n"
                                    "Global hotkeys won't work.")
@@ -977,9 +977,9 @@ class ModernAutoClickerApp:
         if hasattr(self, 'start_btn') and hasattr(self, 'stop_btn'):
             start_key = self.hotkey_start.upper()
             stop_key = self.hotkey_stop.upper()
-            
-            print(f"Atualizando textos dos botões: Start={start_key}, Stop={stop_key}")  # Debug
-            
+
+            print(f"Updating button texts: Start={start_key}, Stop={stop_key}")  # Debug
+
             if self.clicking:
                 self.start_btn.configure(text=f"⏸️ Stop ({start_key})")
             else:
