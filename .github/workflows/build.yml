@@ -20,7 +20,7 @@ jobs:
         with:
           dry_run: false
           build_metadata: false
-
+ 
   build-linux:
     needs: bump-version
     runs-on: ubuntu-latest
