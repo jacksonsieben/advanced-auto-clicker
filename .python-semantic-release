@@ -1,0 +1,3 @@
+[semantic_release]
+version_variable = src/version.py:__version__
+upload_to_pypi = false  # set true if you want to publish to PyPI
