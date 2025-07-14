@@ -5,7 +5,6 @@ on:
     branches:
       - master
 
-# default: least privileged permissions across all jobs
 permissions:
   contents: read
 
@@ -18,9 +17,6 @@ jobs:
 
     permissions:
       contents: write
-
-    outputs:
-      new_version: ${{ steps.set-new-version.outputs.new_version }}
 
     steps:
       - name: Setup | Checkout Repository on Release Branch
@@ -73,9 +69,12 @@ jobs:
           git_committer_name: "github-actions"
           git_committer_email: "actions@users.noreply.github.com"
 
-      - name: Set new_version output
-        id: set-new-version
-        run: echo "new_version=${{ steps.release.outputs.version }}" >> $GITHUB_OUTPUT
+      - name: Publish | Upload to GitHub Release Assets
+        uses: python-semantic-release/publish-action@v10.2.0
+        if: steps.release.outputs.released == 'true'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release.outputs.tag }}
 
   build-linux:
     needs: bump-version
@@ -83,7 +82,7 @@ jobs:
     env:
       VERSION: ${{ needs.bump-version.outputs.new_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -101,7 +100,7 @@ jobs:
           ./build-linux.sh "$VERSION"
 
       - name: Upload Linux executable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: AdvancedAutoClicker-linux-$VERSION
           path: ./dist/AdvancedAutoClicker
@@ -112,7 +111,7 @@ jobs:
     env:
       VERSION: ${{ needs.bump-version.outputs.new_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -120,13 +119,17 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        shell: cmd
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller customtkinter pyautogui pynput pillow keyboard
+
+      - name: Build Windows executable
         run: |
           call .\install_deps.bat
           python build_exe.py %VERSION%
 
       - name: Upload Windows executable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: AdvancedAutoClicker-windows-${{ env.VERSION }}
           path: .\dist\AdvancedAutoClicker.exe
@@ -135,7 +138,7 @@ jobs:
     needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Create GitHub Release
         id: create_release
@@ -149,21 +152,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Linux executable to release
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          tag_name: ${{ needs.bump-version.outputs.new_version }}
+          name: AdvancedAutoClicker-linux-${{ needs.bump-version.outputs.new_version }}
           asset_path: ./dist/AdvancedAutoClicker
-          asset_name: AdvancedAutoClicker-linux-${{ needs.bump-version.outputs.new_version }}
-          asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Windows executable to release
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/AdvancedAutoClicker.exe
-          asset_name: AdvancedAutoClicker-windows-${{ needs.bump-version.outputs.new_version }}.exe
-          asset_content_type: application/octet-stream
+          tag_name: ${{ needs.bump-version.outputs.new_version }}
+          name: AdvancedAutoClicker-windows-${{ needs.bump-version.outputs.new_version }}.exe
+          asset_path: .\dist\AdvancedAutoClicker.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
