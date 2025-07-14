@@ -11,6 +11,7 @@ A modern and feature-rich auto clicker application with global hotkeys, precise 
 - **Configuration Management**: Save and load different configurations
 - **Portable**: No installation required, works from any directory
 - **Cross-Platform**: Supports both Windows and Linux
+- **Automated Builds**: Continuous integration with automated executable generation
 
 ## Building Executable
 
