@@ -158,7 +158,7 @@ jobs:
           name: AdvancedAutoClicker-linux-${{ needs.bump-version.outputs.new_version }}
           asset_path: ./dist/AdvancedAutoClicker
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
 
       - name: Upload Windows executable to release
         uses: softprops/action-gh-release@v1
