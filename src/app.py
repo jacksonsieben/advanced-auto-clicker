@@ -4,7 +4,7 @@ import pyautogui
 import threading
 import time
 import keyboard
-from pynput import mouse
+from pynput import mouse, keyboard as pynput_keyboard
 from customtkinter import ThemeManager
 import json
 import os
@@ -52,7 +52,7 @@ class ModernAutoClickerApp:
         
         # Configure pyautogui
         pyautogui.FAILSAFE = True
-        pyautogui.PAUSE = 0.01
+        pyautogui.PAUSE = 0.001  # Reduced pause for better performance
         
         # Variables
         self.clicking = False
@@ -68,11 +68,12 @@ class ModernAutoClickerApp:
         self.hotkey_stop = "f7"
         
         # Mouse movement detection
-        self.mouse_detection_enabled = False
+        self.idle_mode_enabled = False
         self.mouse_movement_listener = None
+        self.keyboard_listener = None
         self.last_mouse_position = None
-        self.last_movement_time = 0
-        self.movement_reset_delay = 1.0  # seconds after movement stops to resume clicking
+        self.last_activity_time = 0
+        self.idle_delay = 1.0  # seconds after activity stops to resume clicking
 
         self.create_widgets()
         self.setup_global_hotkeys()
@@ -261,59 +262,68 @@ class ModernAutoClickerApp:
         self.get_pos_btn.pack(pady=(5, 0))
         self.get_pos_btn.configure(state="disabled")
         
-        # Mouse Movement Detection Frame
-        movement_frame = ctk.CTkFrame(main_frame, corner_radius=10)
-        movement_frame.pack(fill="x", padx=20, pady=(0, 15))
+        # Idle Mode Detection Frame
+        idle_frame = ctk.CTkFrame(main_frame, corner_radius=10)
+        idle_frame.pack(fill="x", padx=20, pady=(0, 15))
         
-        movement_title = ctk.CTkLabel(
-            movement_frame,
-            text="🐭 Mouse Movement Detection",
+        idle_title = ctk.CTkLabel(
+            idle_frame,
+            text="💤 Idle Mode Detection",
             font=ctk.CTkFont(size=16, weight="bold")
         )
-        movement_title.pack(pady=(15, 10))
+        idle_title.pack(pady=(15, 10))
         
-        # Movement detection option
-        movement_options_frame = ctk.CTkFrame(movement_frame, fg_color="transparent")
-        movement_options_frame.pack(pady=(0, 10))
+        # Idle detection option
+        idle_options_frame = ctk.CTkFrame(idle_frame, fg_color="transparent")
+        idle_options_frame.pack(pady=(0, 10))
         
-        self.movement_detection_var = ctk.BooleanVar(value=False)
-        self.movement_checkbox = ctk.CTkCheckBox(
-            movement_options_frame,
-            text="Pause clicking when mouse moves",
-            variable=self.movement_detection_var,
-            command=self.on_movement_detection_change,
+        self.idle_detection_var = ctk.BooleanVar(value=False)
+        self.idle_checkbox = ctk.CTkCheckBox(
+            idle_options_frame,
+            text="Only click when user is idle (no mouse/keyboard activity)",
+            variable=self.idle_detection_var,
+            command=self.on_idle_detection_change,
             font=ctk.CTkFont(size=12)
         )
-        self.movement_checkbox.pack(pady=5)
+        self.idle_checkbox.pack(pady=5)
         
-        # Movement delay setting
-        delay_frame = ctk.CTkFrame(movement_options_frame, fg_color="transparent")
-        delay_frame.pack(pady=(5, 15))
+        # Idle delay setting
+        delay_frame = ctk.CTkFrame(idle_options_frame, fg_color="transparent")
+        delay_frame.pack(pady=(5, 0))
         
         ctk.CTkLabel(
             delay_frame,
-            text="Resume delay after movement stops (seconds):",
+            text="Resume delay after activity stops (seconds):",
             font=ctk.CTkFont(size=11)
         ).pack(side="left", padx=(0, 10))
         
-        self.movement_delay_var = ctk.StringVar(value="1.0")
-        self.movement_delay_entry = ctk.CTkEntry(
+        self.idle_delay_var = ctk.StringVar(value="1.0")
+        self.idle_delay_entry = ctk.CTkEntry(
             delay_frame,
             width=60,
-            textvariable=self.movement_delay_var,
+            textvariable=self.idle_delay_var,
             justify="center",
             font=ctk.CTkFont(size=11)
         )
-        self.movement_delay_entry.pack(side="left")
+        self.idle_delay_entry.pack(side="left")
         
-        # Movement status indicator
-        self.movement_status_label = ctk.CTkLabel(
-            movement_frame,
-            text="🔘 Movement detection disabled",
+        # Performance tip
+        performance_tip = ctk.CTkLabel(
+            idle_options_frame,
+            text="💡 Tip: Disable idle mode if you experience mouse lag",
+            font=ctk.CTkFont(size=10),
+            text_color="gray"
+        )
+        performance_tip.pack()
+        
+        # Idle status indicator
+        self.idle_status_label = ctk.CTkLabel(
+            idle_frame,
+            text="🔘 Idle mode disabled",
             font=ctk.CTkFont(size=11),
             text_color="gray"
         )
-        self.movement_status_label.pack(pady=(0, 15))
+        self.idle_status_label.pack()
         
         self.enable_status_frame = False
 
@@ -412,10 +422,11 @@ class ModernAutoClickerApp:
 • For very fast clicking, use milliseconds instead of seconds
 • The app will automatically stop when max clicks is reached
 
-🐭 Mouse Movement Detection:
-• Enable to pause clicking when mouse moves
-• Useful for preventing accidental clicks during work
-• Configurable delay before resuming after movement stops
+� Idle Mode Detection:
+• Enable to pause clicking when user is active (mouse or keyboard)
+• Only clicks when user is completely idle (no movement/typing)
+• Useful for preventing interruptions during work
+• Configurable delay before resuming after activity stops
 • Real-time status shows when clicks are paused
 
 💾 Configuration Management:
@@ -428,14 +439,14 @@ class ModernAutoClickerApp:
 • Emergency stop by moving mouse to top-left corner
 • Press ESC to cancel location picking
 • Global hotkeys work even when window is minimized
-• Mouse movement detection prevents unwanted clicks
+• Idle mode detection prevents unwanted clicks during work
 
 🎯 How to use:
 1. Set your desired click interval
 2. Choose mouse button (Left/Right/Middle)
 3. Set repeat mode (Forever or specific number of times)
 4. Choose click location (Current cursor or Pick specific location)
-5. Optionally enable mouse movement detection
+5. Optionally enable idle mode detection
 6. Press Start or {self.hotkey_start.upper()} to begin clicking
 
 🎮 Configure Hotkeys:
@@ -995,8 +1006,8 @@ class ModernAutoClickerApp:
             if self.picking_location:
                 self.cancel_location_pick()
             
-            # Stop mouse movement monitoring
-            self.stop_mouse_movement_monitoring()
+            # Stop idle mode monitoring
+            self.stop_idle_monitoring()
             
             keyboard.unhook_all()
         except:
@@ -1128,15 +1139,15 @@ class ModernAutoClickerApp:
             self.update_button_texts()
             self.stop_btn.configure(state="normal")
             
-            # Start mouse movement monitoring if enabled
-            if self.mouse_detection_enabled:
-                self.start_mouse_movement_monitoring()
+            # Start idle mode monitoring if enabled
+            if self.idle_mode_enabled:
+                self.start_idle_monitoring()
             
             if self.enable_status_frame:
                 self.status_label.configure(text="🔥 Clicking...")
             
-            # Update movement status
-            self.update_movement_status()
+            # Update idle status
+            self.update_idle_status()
             
             # Start clicking in a separate thread
             self.click_thread = threading.Thread(target=self.click_worker, daemon=True)
@@ -1153,14 +1164,14 @@ class ModernAutoClickerApp:
         self.update_button_texts()
         self.stop_btn.configure(state="disabled")
         
-        # Stop mouse movement monitoring
-        if self.mouse_detection_enabled:
-            self.stop_mouse_movement_monitoring()
+        # Stop idle mode monitoring
+        if self.idle_mode_enabled:
+            self.stop_idle_monitoring()
             # Restart monitoring for next session
-            self.start_mouse_movement_monitoring()
+            self.start_idle_monitoring()
         
-        # Update movement status
-        self.update_movement_status()
+        # Update idle status
+        self.update_idle_status()
         
         if self.enable_status_frame:
             self.status_label.configure(text="⏹️ Stopped")
@@ -1192,6 +1203,7 @@ class ModernAutoClickerApp:
                 click_x, click_y = pyautogui.position()
         
         last_click_time = 0
+        last_ui_update = 0
         
         while self.clicking:
             try:
@@ -1201,22 +1213,26 @@ class ModernAutoClickerApp:
                 
                 current_time = time.time()
                 
-                # Check if we should pause for mouse movement
-                if self.should_pause_for_movement():
-                    # Update movement status
-                    self.root.after(0, self.update_movement_status)
+                # Check if we should pause for user activity (idle mode)
+                if self.should_pause_for_activity():
+                    # Update idle status less frequently to reduce lag
+                    if current_time - last_ui_update > 0.2:  # Update UI every 200ms
+                        self.root.after(0, self.update_idle_status)
+                        last_ui_update = current_time
                     
                     # Wait a bit and continue checking
-                    time.sleep(0.1)
+                    time.sleep(0.05)  # Reduced sleep for better responsiveness
                     continue
                 
                 # Check if enough time has passed since last click
                 if current_time - last_click_time < interval:
-                    # Update movement status
-                    self.root.after(0, self.update_movement_status)
+                    # Update idle status less frequently to reduce lag
+                    if current_time - last_ui_update > 0.2:  # Update UI every 200ms
+                        self.root.after(0, self.update_idle_status)
+                        last_ui_update = current_time
                     
                     # Wait a bit and continue
-                    time.sleep(0.1)
+                    time.sleep(0.05)  # Reduced sleep for better responsiveness
                     continue
                 
                 # Perform click
@@ -1228,9 +1244,11 @@ class ModernAutoClickerApp:
                 self.click_count += 1
                 last_click_time = current_time
                 
-                # Update UI
-                self.root.after(0, self.update_ui)
-                self.root.after(0, self.update_movement_status)
+                # Update UI less frequently to reduce lag
+                if current_time - last_ui_update > 0.2:  # Update UI every 200ms
+                    self.root.after(0, self.update_ui)
+                    self.root.after(0, self.update_idle_status)
+                    last_ui_update = current_time
                 
                 # Small delay to prevent excessive CPU usage
                 time.sleep(0.01)
@@ -1282,88 +1300,134 @@ class ModernAutoClickerApp:
         finally:
             self.cleanup_hotkeys()
     
-    def on_movement_detection_change(self):
-        """Handle changes to movement detection setting"""
-        self.mouse_detection_enabled = self.movement_detection_var.get()
+    def on_idle_detection_change(self):
+        """Handle changes to idle mode detection setting"""
+        self.idle_mode_enabled = self.idle_detection_var.get()
         
-        if self.mouse_detection_enabled:
-            self.start_mouse_movement_monitoring()
-            self.movement_status_label.configure(
-                text="🟢 Movement detection enabled - clicks pause when mouse moves",
+        if self.idle_mode_enabled:
+            self.start_idle_monitoring()
+            self.idle_status_label.configure(
+                text="🟢 Idle mode enabled - clicks only when no mouse/keyboard activity",
                 text_color="green"
             )
         else:
-            self.stop_mouse_movement_monitoring()
-            self.movement_status_label.configure(
-                text="🔘 Movement detection disabled",
+            self.stop_idle_monitoring()
+            self.idle_status_label.configure(
+                text="🔘 Idle mode disabled",
                 text_color="gray"
             )
     
-    def start_mouse_movement_monitoring(self):
-        """Start monitoring mouse movement"""
-        if self.mouse_movement_listener:
-            self.stop_mouse_movement_monitoring()
+    def start_idle_monitoring(self):
+        """Start monitoring mouse and keyboard activity"""
+        if not self.idle_mode_enabled:
+            return
+            
+        if self.mouse_movement_listener or self.keyboard_listener:
+            self.stop_idle_monitoring()
         
         self.last_mouse_position = pyautogui.position()
-        self.last_movement_time = time.time()
+        self.last_activity_time = time.time()
         
         # Start mouse movement listener
-        self.mouse_movement_listener = mouse.Listener(on_move=self.on_mouse_move)
+        self.mouse_movement_listener = mouse.Listener(on_move=self.on_mouse_move, suppress=False)
         self.mouse_movement_listener.start()
+        
+        # Start keyboard listener with minimal overhead
+        try:
+            self.keyboard_listener = pynput_keyboard.Listener(
+                on_press=self.on_key_press,
+                on_release=self.on_key_release,
+                suppress=False
+            )
+            self.keyboard_listener.start()
+        except Exception as e:
+            print(f"Keyboard listener failed: {e}")
+            # If pynput keyboard fails, we'll only monitor mouse
     
-    def stop_mouse_movement_monitoring(self):
-        """Stop monitoring mouse movement"""
+    def stop_idle_monitoring(self):
+        """Stop monitoring mouse and keyboard activity"""
         if self.mouse_movement_listener:
             self.mouse_movement_listener.stop()
             self.mouse_movement_listener = None
+        
+        if self.keyboard_listener:
+            self.keyboard_listener.stop()
+            self.keyboard_listener = None
     
     def on_mouse_move(self, x, y):
         """Handle mouse movement events"""
-        if self.mouse_detection_enabled:
-            self.last_mouse_position = (x, y)
-            self.last_movement_time = time.time()
+        if self.idle_mode_enabled:
+            current_time = time.time()
             
-            # Update status to show movement detected
-            if self.clicking:
-                self.movement_status_label.configure(
-                    text="🔴 Mouse movement detected - clicks paused",
-                    text_color="red"
-                )
+            # Only update if enough time has passed AND mouse moved significantly
+            if (current_time - self.last_activity_time > 0.1 and 
+                (self.last_mouse_position is None or 
+                 abs(x - self.last_mouse_position[0]) > 5 or 
+                 abs(y - self.last_mouse_position[1]) > 5)):
+                self.last_mouse_position = (x, y)
+                self.last_activity_time = current_time
     
-    def should_pause_for_movement(self):
-        """Check if clicking should be paused due to recent mouse movement"""
-        if not self.mouse_detection_enabled:
+    def on_key_press(self, key):
+        """Handle keyboard press events"""
+        if self.idle_mode_enabled:
+            current_time = time.time()
+            
+            # Only update if enough time has passed to avoid excessive updates
+            if current_time - self.last_activity_time > 0.1:  # Throttle to 10 times per second
+                self.last_activity_time = current_time
+    
+    def on_key_release(self, key):
+        """Handle keyboard release events"""
+        if self.idle_mode_enabled:
+            current_time = time.time()
+            
+            # Only update if enough time has passed to avoid excessive updates  
+            if current_time - self.last_activity_time > 0.1:  # Throttle to 10 times per second
+                self.last_activity_time = current_time
+    
+    def should_pause_for_activity(self):
+        """Check if clicking should be paused due to recent user activity"""
+        if not self.idle_mode_enabled:
             return False
         
         try:
-            delay = float(self.movement_delay_var.get() or 1.0)
+            delay = float(self.idle_delay_var.get() or 1.0)
         except ValueError:
             delay = 1.0
         
-        time_since_movement = time.time() - self.last_movement_time
-        return time_since_movement < delay
+        time_since_activity = time.time() - self.last_activity_time
+        return time_since_activity < delay
     
-    def update_movement_status(self):
-        """Update movement status label"""
-        if not self.mouse_detection_enabled:
+    def update_idle_status(self):
+        """Update idle status label"""
+        if not self.idle_mode_enabled:
             return
         
         if self.clicking:
-            if self.should_pause_for_movement():
-                self.movement_status_label.configure(
-                    text="🔴 Clicks paused - waiting for mouse to stop moving",
-                    text_color="red"
-                )
+            if self.should_pause_for_activity():
+                # Check if status needs to be updated to avoid unnecessary UI updates
+                current_text = self.idle_status_label.cget("text")
+                if "paused" not in current_text:
+                    self.idle_status_label.configure(
+                        text="🔴 Clicks paused - waiting for user to become idle",
+                        text_color="red"
+                    )
             else:
-                self.movement_status_label.configure(
-                    text="🟢 Clicking normally - no recent mouse movement",
+                # Check if status needs to be updated to avoid unnecessary UI updates
+                current_text = self.idle_status_label.cget("text")
+                if "normally" not in current_text:
+                    self.idle_status_label.configure(
+                        text="🟢 Clicking normally - user is idle",
+                        text_color="green"
+                    )
+        else:
+            # Check if status needs to be updated to avoid unnecessary UI updates
+            current_text = self.idle_status_label.cget("text")
+            if "enabled" not in current_text or "only when no" not in current_text:
+                self.idle_status_label.configure(
+                    text="🟢 Idle mode enabled - clicks only when no mouse/keyboard activity",
                     text_color="green"
                 )
-        else:
-            self.movement_status_label.configure(
-                text="🟢 Movement detection enabled - clicks pause when mouse moves",
-                text_color="green"
-            )
     
     def save_configuration(self, filename=None, show_message_box=True):
         """Save current configuration to JSON file"""
@@ -1386,9 +1450,9 @@ class ModernAutoClickerApp:
                     "x": self.x_var.get(),
                     "y": self.y_var.get()
                 },
-                "mouse_movement_detection": {
-                    "enabled": self.movement_detection_var.get(),
-                    "delay": self.movement_delay_var.get()
+                "idle_mode_detection": {
+                    "enabled": self.idle_detection_var.get(),
+                    "delay": self.idle_delay_var.get()
                 },
                 "hotkeys": {
                     "start_stop": self.hotkey_start,
@@ -1466,12 +1530,18 @@ class ModernAutoClickerApp:
                 self.y_var.set(location.get("y", "0"))
                 self.on_location_change()  # Update UI state
             
-            # Mouse movement detection
-            if "mouse_movement_detection" in config:
+            # Idle mode detection (backwards compatibility)
+            if "idle_mode_detection" in config:
+                idle_mode = config["idle_mode_detection"]
+                self.idle_detection_var.set(idle_mode.get("enabled", False))
+                self.idle_delay_var.set(idle_mode.get("delay", "1.0"))
+                self.on_idle_detection_change()  # Update UI state
+            elif "mouse_movement_detection" in config:
+                # Backwards compatibility with old configs
                 movement = config["mouse_movement_detection"]
-                self.movement_detection_var.set(movement.get("enabled", False))
-                self.movement_delay_var.set(movement.get("delay", "1.0"))
-                self.on_movement_detection_change()  # Update UI state
+                self.idle_detection_var.set(movement.get("enabled", False))
+                self.idle_delay_var.set(movement.get("delay", "1.0"))
+                self.on_idle_detection_change()  # Update UI state
             
             # Hotkeys
             if "hotkeys" in config:
