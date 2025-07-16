@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.0 (2025-07-16)
+
+### Features
+
+- Iddle mode
+  ([`10ad898`](https://github.com/jacksonsieben/advanced-auto-clicker/commit/10ad8988462c0cfadd01f04471886c7fdd63e710))
+
+
 ## v1.0.2 (2025-07-14)
 
 
